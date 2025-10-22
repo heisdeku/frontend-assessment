@@ -227,7 +227,7 @@ let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 export function startDataRefresh(callback: () => void, delay = 10000) {
   const run = async () => {
-    const transactionData = await generateTransactionData(100);
+    const transactionData = generateTransactionData(100);
     globalTransactionCache.push(...transactionData);
     callback();
 
@@ -245,7 +245,6 @@ export function stopDataRefresh() {
   }
 }
 
-// Analytics function for global transaction insights
 export function getGlobalAnalytics() {
   return {
     totalCachedTransactions: globalTransactionCache.length,

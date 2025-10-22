@@ -1,24 +1,62 @@
 import { Transaction } from "../types/transaction";
 
-// Comprehensive risk assessment engine for fraud detection and compliance
-export const generateRiskAssessment = (transactions: Transaction[]) => {
-  const startTime = performance.now();
+export const detectAnomalies = (
+  transaction: Transaction,
+  userMap: Record<string, Transaction[]>
+) => {
+  const userTransactions = userMap[transaction.userId] || [];
+  const avgAmount =
+    userTransactions.reduce((sum, t) => sum + t.amount, 0) /
+    (userTransactions.length || 1);
 
-  const fraudScores = calculateFraudScores(transactions);
-  const timeSeriesData = generateTimeSeriesAnalysis(transactions);
-  const marketCorrelation = calculateMarketCorrelation(transactions);
-  const behaviorClusters = performBehaviorClustering(transactions);
+  const amountDeviation = Math.abs(transaction.amount - avgAmount) / avgAmount;
+  const locationAnomaly =
+    transaction.location &&
+    !userTransactions
+      .slice(-10)
+      .some((t) => t.location === transaction.location)
+      ? 0.4
+      : 0;
 
-  const endTime = performance.now();
+  return Math.min(amountDeviation * 0.3 + locationAnomaly, 1);
+};
 
-  return {
-    fraudScores,
-    timeSeriesData,
-    marketCorrelation,
-    behaviorClusters,
-    processingTime: endTime - startTime,
-    dataPoints: transactions.length ** 2,
-  };
+export const analyzeTransactionPatterns = (
+  transaction: Transaction,
+  merchantMap: Record<string, Transaction[]>,
+  userMap: Record<string, Transaction[]>
+) => {
+  const merchantTxs = merchantMap[transaction.merchantName] || [];
+  const similarTransactions = merchantTxs.filter(
+    (t) => Math.abs(t.amount - transaction.amount) < 10
+  );
+
+  const velocityCheck = (userMap[transaction.userId] || []).filter(
+    (t) =>
+      Math.abs(
+        new Date(t.timestamp).getTime() -
+          new Date(transaction.timestamp).getTime()
+      ) < 3600000
+  );
+
+  let score = 0;
+  if (similarTransactions.length > 3) score += 0.3;
+  if (velocityCheck.length > 5) score += 0.5;
+
+  return score;
+};
+
+export const calculateRiskFactorsCached = (
+  transaction: Transaction,
+  merchantMap: Record<string, Transaction[]>
+) => {
+  const merchantHistory = merchantMap[transaction.merchantName] || [];
+
+  const merchantRisk = merchantHistory.length < 5 ? 0.8 : 0.2;
+  const amountRisk = transaction.amount > 1000 ? 0.6 : 0.1;
+  const timeRisk = new Date(transaction.timestamp).getHours() < 6 ? 0.4 : 0.1;
+
+  return merchantRisk + amountRisk + timeRisk;
 };
 
 export const calculateStringSimilarity = (
@@ -108,6 +146,27 @@ export const generateTimeSeriesAnalysis = (transactions: Transaction[]) => {
   return { dailyData, movingAverages };
 };
 
+export const calculatePearsonCorrelation = (
+  x: number[],
+  y: number[]
+): number => {
+  const n = Math.min(x.length, y.length);
+  if (n < 2) return 0;
+
+  const sumX = x.slice(0, n).reduce((a, b) => a + b, 0);
+  const sumY = y.slice(0, n).reduce((a, b) => a + b, 0);
+  const sumXY = x.slice(0, n).reduce((sum, xi, i) => sum + xi * y[i], 0);
+  const sumX2 = x.slice(0, n).reduce((sum, xi) => sum + xi * xi, 0);
+  const sumY2 = y.slice(0, n).reduce((sum, yi) => sum + yi * yi, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt(
+    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+  );
+
+  return denominator === 0 ? 0 : numerator / denominator;
+};
+
 export const calculateMarketCorrelation = (transactions: Transaction[]) => {
   const categoryGroups: Record<string, number[]> = {};
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
@@ -131,28 +190,20 @@ export const calculateMarketCorrelation = (transactions: Transaction[]) => {
   return correlationMatrix;
 };
 
-export const calculatePearsonCorrelation = (
-  x: number[],
-  y: number[]
-): number => {
-  const n = Math.min(x.length, y.length);
-  if (n < 2) return 0;
+export const analyzeSpendingPattern = (userTransactions: Transaction[]) => {
+  const totalAmount = userTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const avgAmount = totalAmount / userTransactions.length;
 
-  const sumX = x.slice(0, n).reduce((a, b) => a + b, 0);
-  const sumY = y.slice(0, n).reduce((a, b) => a + b, 0);
-  const sumXY = x.slice(0, n).reduce((sum, xi, i) => sum + xi * y[i], 0);
-  const sumX2 = x.slice(0, n).reduce((sum, xi) => sum + xi * xi, 0);
-  const sumY2 = y.slice(0, n).reduce((sum, yi) => sum + yi * yi, 0);
+  const categoryDistribution: Record<string, number> = {};
+  userTransactions.forEach((t) => {
+    categoryDistribution[t.category] =
+      (categoryDistribution[t.category] || 0) + 1;
+  });
 
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt(
-    (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
-  );
-
-  return denominator === 0 ? 0 : numerator / denominator;
+  return { avgAmount, totalAmount, categoryDistribution };
 };
 
-function performBehaviorClustering(transactions: Transaction[]) {
+export const performBehaviorClustering = (transactions: Transaction[]) => {
   const userMap = new Map<string, Transaction[]>();
 
   transactions.forEach((t) => {
@@ -171,16 +222,4 @@ function performBehaviorClustering(transactions: Transaction[]) {
   });
 
   return clusters;
-}
-export const analyzeSpendingPattern = (userTransactions: Transaction[]) => {
-  const totalAmount = userTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const avgAmount = totalAmount / userTransactions.length;
-
-  const categoryDistribution: Record<string, number> = {};
-  userTransactions.forEach((t) => {
-    categoryDistribution[t.category] =
-      (categoryDistribution[t.category] || 0) + 1;
-  });
-
-  return { avgAmount, totalAmount, categoryDistribution };
 };

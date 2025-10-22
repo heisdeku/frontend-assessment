@@ -33,6 +33,24 @@ export const calculateRelevanceScore = (item: string, term: string): number => {
   return score;
 };
 
+export const generateSuggestions = (term: string) => {
+  const filtered = commonTerms.filter((item) => {
+    return (
+      item.toLowerCase().includes(term.toLowerCase()) ||
+      item.toLowerCase().startsWith(term.toLowerCase()) ||
+      term.toLowerCase().includes(item.toLowerCase())
+    );
+  });
+
+  const sorted = filtered.sort((a, b) => {
+    const aScore = calculateRelevanceScore(a, term);
+    const bScore = calculateRelevanceScore(b, term);
+    return bScore - aScore;
+  });
+
+  return sorted.slice(0, 5);
+};
+
 export const normalizeSearchInput = (term: string): string => {
   let processedTerm = term.toLowerCase().trim();
 
@@ -66,38 +84,20 @@ export const normalizeSearchInput = (term: string): string => {
   return processedTerm;
 };
 
-export const generateSuggestions = (term: string) => {
-  const filtered = commonTerms.filter((item) => {
-    return (
-      item.toLowerCase().includes(term.toLowerCase()) ||
-      item.toLowerCase().startsWith(term.toLowerCase()) ||
-      term.toLowerCase().includes(item.toLowerCase())
-    );
-  });
-
-  const sorted = filtered.sort((a, b) => {
-    const aScore = calculateRelevanceScore(a, term);
-    const bScore = calculateRelevanceScore(b, term);
-    return bScore - aScore;
-  });
-
-  return sorted.slice(0, 5);
-};
-
-export   const analyzeSearchPatterns = (term: string) => {
-    const segments = [];
-    for (let i = 0; i < term.length; i++) {
-      for (let j = i + 1; j <= term.length; j++) {
-        segments.push(term.substring(i, j));
-      }
+export const analyzeSearchPatterns = (term: string) => {
+  const segments = [];
+  for (let i = 0; i < term.length; i++) {
+    for (let j = i + 1; j <= term.length; j++) {
+      segments.push(term.substring(i, j));
     }
+  }
 
-    const uniqueSegments = new Set(segments);
-    const score = uniqueSegments.size * term.length;
+  const uniqueSegments = new Set(segments);
+  const score = uniqueSegments.size * term.length;
 
-    return {
-      segments: segments.length,
-      unique: uniqueSegments.size,
-      score,
-    };
+  return {
+    segments: segments.length,
+    unique: uniqueSegments.size,
+    score,
   };
+};

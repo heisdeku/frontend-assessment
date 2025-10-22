@@ -1,12 +1,12 @@
 /// <reference lib="webworker" />
 
 import type { Transaction } from "../types/transaction";
-import { groupBy } from "../utils/helpers";
 import {
   analyzeTransactionPatterns,
   calculateRiskFactorsCached,
   detectAnomalies,
-} from "../utils/transactions";
+} from "../utils/analytics-engine";
+import { groupBy } from "../utils/helpers";
 
 self.onmessage = (event: MessageEvent<Transaction[]>) => {
   const transactions = event.data;

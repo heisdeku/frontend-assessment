@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
-  generateRiskAssessment,
   calculateFraudScores,
   generateTimeSeriesAnalysis,
   calculateMarketCorrelation,
   calculateStringSimilarity,
   analyzeSpendingPattern,
+  analyzeTransactionPatterns,
+  calculateRiskFactorsCached,
+  detectAnomalies,
 } from "../analytics-engine";
 import { Transaction } from "../../types/transaction";
 
@@ -50,6 +52,20 @@ const mockTransactions: Transaction[] = [
     accountId: "account1",
   },
 ];
+
+const userMap: Record<string, Transaction[]> = {
+  user1: [
+    { ...mockTransactions[0], amount: 90 },
+    { ...mockTransactions[0], amount: 110 },
+  ],
+};
+
+const merchantMap: Record<string, Transaction[]> = {
+  Supermarket: [
+    { ...mockTransactions[0], amount: 95 },
+    { ...mockTransactions[0], amount: 105 },
+  ],
+};
 
 describe("analytics-engine", () => {
   describe("calculateStringSimilarity", () => {
@@ -102,14 +118,32 @@ describe("analytics-engine", () => {
     });
   });
 
-  describe("generateRiskAssessment", () => {
-    it("should generate a comprehensive risk assessment", () => {
-      const assessment = generateRiskAssessment(mockTransactions);
-      expect(assessment).toHaveProperty("fraudScores");
-      expect(assessment).toHaveProperty("timeSeriesData");
-      expect(assessment).toHaveProperty("marketCorrelation");
-      expect(assessment).toHaveProperty("behaviorClusters");
-      expect(assessment.processingTime).toBeGreaterThan(0);
+   describe("detectAnomalies", () => {
+    it("should detect anomalies in transactions", () => {
+      const anomalousTransaction = { ...mockTransactions[0], amount: 250 };
+      const anomalyScore = detectAnomalies(anomalousTransaction, userMap);
+      expect(anomalyScore).toBeGreaterThan(0);
+    });
+  });
+
+  describe("analyzeTransactionPatterns", () => {
+    it("should analyze transaction patterns", () => {
+      const patternScore = analyzeTransactionPatterns(
+        mockTransactions[0],
+        merchantMap,
+        userMap
+      );
+      expect(patternScore).toBe(0);
+    });
+  });
+
+  describe("calculateRiskFactorsCached", () => {
+    it("should calculate risk factors for a transaction", () => {
+      const riskFactors = calculateRiskFactorsCached(
+        mockTransactions[0],
+        merchantMap
+      );
+      expect(riskFactors).toBeGreaterThan(0);
     });
   });
 });
