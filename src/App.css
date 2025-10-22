@@ -26,9 +26,6 @@ body {
   padding: 20px;
 }
 
-.dashboard-header {
-  margin-bottom: 30px;
-}
 
 .dashboard-header h1 {
   font-size: 2.5rem;
@@ -46,6 +43,7 @@ body {
 
 .stat-card {
   background: white;
+  cursor: pointer;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -75,37 +73,49 @@ body {
   flex: 1;
 }
 
+.stat-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.stat-analyzing__container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #666;
   margin-top: 4px;
 }
 
 .dashboard-controls {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px
 }
 
 .filter-controls {
+  flex-shrink: 0;
   display: flex;
   gap: 16px;
-  margin-top: 20px;
   flex-wrap: wrap;
 }
 
 .filter-controls select {
-  padding: 8px 12px;
-  border: 2px solid #e0e0e0;
+  padding: 12px;
+  border: .75px solid #e0e0e0;
   border-radius: 6px;
   font-size: 14px;
   background: white;
@@ -127,7 +137,6 @@ body {
 .search-bar {
   position: relative;
   width: 100%;
-  max-width: 500px;
 }
 
 .search-input-container {
@@ -146,7 +155,7 @@ body {
 .search-input {
   width: 100%;
   padding: 12px 44px 12px 44px;
-  border: 2px solid #e0e0e0;
+  border: .75px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s ease;
@@ -194,6 +203,7 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -244,19 +254,14 @@ body {
 }
 
 /* Transaction List Styles */
-.transaction-list {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
+.transaction-list {}
 
 .transaction-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 24px 0;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  margin-top: 24px;
 }
 
 .transaction-list-header h2 {
@@ -272,9 +277,7 @@ body {
 }
 
 .transaction-list-container {
-  max-height: 600px;
   overflow-y: auto;
-  padding: 0 24px 24px;
 }
 
 .transaction-item {
@@ -336,9 +339,20 @@ body {
   color: #f44336;
 }
 
+.modal-content button {
+  width: 100%;
+  height: 55px;
+}
+
 .transaction-details {
   border-top: 1px solid #f0f0f0;
   padding-top: 12px;
+}
+
+.transaction-details p {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 4px;
 }
 
 .transaction-description {
@@ -398,17 +412,10 @@ body {
   color: #666;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top: 4px solid #2196f3;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+.dashboard-loading p {
+  margin-top: 20px;
 }
 
-/* Modal Styles */
 .transaction-detail-modal {
   position: fixed;
   top: 0;
@@ -432,70 +439,413 @@ body {
   overflow-y: auto;
 }
 
-.modal-content h3 {
-  font-size: 1.5rem;
-  color: #1a1a1a;
-  margin-bottom: 16px;
+.virtual-table-body {
+  height: 65vh;
+  position: relative;
+  overflow: auto;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e6edf5;
+  border-radius: 12px;
 }
 
-.transaction-details p {
-  margin-bottom: 8px;
-  font-size: 0.95rem;
+.col-amount {
+  text-align: right;
+  font-weight: 600;
 }
 
-.modal-content button {
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 16px;
+.col-action {
+  text-align: center;
+  color: #98a2b3;
+}
+
+.col-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-id {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-name-upper {
+  text-transform: uppercase;
+}
+
+.merchant-name-normal {
+  text-transform: none;
+}
+
+/* Status pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-completed .status-dot {
+  background: #2e7d32;
+}
+
+.status-pending {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.status-pending .status-dot {
+  background: #f57c00;
+}
+
+.status-failed {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-failed .status-dot {
+  background: #c62828;
+}
+
+.infinite-sentinel {
+  height: 1px;
+}
+
+.transactions-table {
+  display: grid;
+}
+
+.transactions-table thead {
+  display: grid;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.transactions-table thead tr {
+  display: flex;
+  width: 100%;
+}
+
+/* Header table styles (Image Two) */
+.transactions-table thead th {
+  display: flex;
+  background: #f4f6fa;
+  color: #7b8794;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 12px 16px;
+  border-bottom: .75px solid #e6edf5;
+  flex-grow: 1;
+}
+
+.transactions-table tbody {
+  display: grid;
+  position: relative;
+}
+
+.transactions-table tbody tr.transactions-row {
+  display: flex;
+  position: absolute;
+  width: 100%;
+  padding: 12px 0px;
+  border-top: 1px solid #eef2f7;
   transition: background-color 0.2s ease;
+  cursor: pointer;
 }
 
-.modal-content button:hover {
-  background: #1976d2;
+.transactions-table tbody tr.transactions-row.row-even {
+  background: #fbfcff;
 }
 
-/* Responsive Design */
+.transactions-table tbody tr.transactions-row.row-odd {
+  background: #ffffff;
+}
+
+.transactions-table tbody tr.transactions-row:hover {
+  background-color: #f6f9ff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transactions-table tbody td {
+  display: flex;
+  font-size: 14px;
+  color: #1f2937;
+  padding: 0 16px;
+}
+
+.col-amount {
+  text-align: right;
+  font-weight: 600;
+}
+
+.col-action {
+  text-align: center;
+  color: #98a2b3;
+}
+
+.col-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-name-upper {
+  text-transform: uppercase;
+}
+
+.merchant-name-normal {
+  text-transform: none;
+}
+
+/* Column alignment and sizing */
+.th-date {
+  width: 22%;
+}
+
+.th-amount {
+  width: 16%;
+  text-align: right;
+}
+
+.th-type {
+  width: 14%;
+}
+
+.th-description {
+  width: auto;
+}
+
+.th-status {
+  width: 16%;
+}
+
+.th-action {
+  width: 36px;
+}
+
+.col-amount {
+  text-align: right;
+  font-weight: 600;
+}
+
+.col-action {
+  text-align: center;
+  color: #98a2b3;
+}
+
+.col-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.merchant-name-upper {
+  text-transform: uppercase;
+}
+
+/* Status pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  height: fit-content;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-completed .status-dot {
+  background: #2e7d32;
+}
+
+.status-pending {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.status-pending .status-dot {
+  background: #f57c00;
+}
+
+.status-failed {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.status-failed .status-dot {
+  background: #c62828;
+}
+
+.infinite-sentinel {
+  height: 1px;
+}
+
 @media (max-width: 768px) {
-  .dashboard {
-    padding: 16px;
-  }
-
   .dashboard-header h1 {
-    font-size: 2rem;
+    font-size: 1.45rem;
   }
 
-  .dashboard-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .stat-card {
-    padding: 16px;
+  .dashboard-controls {
+    display: block;
   }
 
   .filter-controls {
-    flex-direction: column;
+    margin-top: 20px;
   }
-
   .filter-controls select {
-    width: 100%;
+    flex: 1;
   }
 
-  .transaction-main {
-    flex-direction: column;
-    gap: 8px;
+  .filter-controls select:nth-child(3) {
+    flex-grow: 1;
+    flex-shrink: 0;
   }
 
-  .transaction-amount {
-    text-align: left;
+  .total-amount {
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
+}
 
-  .transaction-meta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* Mobile Transactions Table */
+.mobile-transactions-table {
+  display: grid;
+}
+
+.mobile-transactions-table thead {
+  display: none;
+}
+
+.mobile-transactions-table tbody {
+  display: grid;
+  position: relative;
+}
+
+.mobile-transactions-table tbody tr.mobile-row {
+  display: flex;
+  position: absolute;
+  width: 100%;
+  padding: 12px 0;
+  border-top: 1px solid #eef2f7;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.mobile-transactions-table tbody tr.mobile-row.row-even {
+  background: #fbfcff;
+}
+
+.mobile-transactions-table tbody tr.mobile-row.row-odd {
+  background: #ffffff;
+}
+
+.mobile-transactions-table tbody tr.mobile-row:hover {
+  background-color: #f6f9ff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-transactions-table tbody td {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+.mobile-transactions-table tbody td:nth-child(2){
+  margin-left: auto;
+}
+
+.mobile-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.mobile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 50%;
+}
+
+.mobile-title {
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-id {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mobile-amount-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  width: 160px;
+}
+
+.mobile-amount {
+  font-weight: 700;
+}
+
+.mobile-amount.credit {
+  color: #2e7d32;
+}
+
+.mobile-amount.debit {
+  color: #c62828;
+}
+
+.mobile-date {
+  font-size: 12px;
+  color: #6b7280;
 }

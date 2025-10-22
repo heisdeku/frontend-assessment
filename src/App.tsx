@@ -1,14 +1,15 @@
-import { Dashboard } from "./components/Dashboard";
-import { UserProvider } from "./contexts/UserContext";
 import "./App.css";
+import { Dashboard } from "./components/Dashboard";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { UserProvider } from "./contexts/UserContext";
 
 function App() {
   return (
-    <UserProvider>
-      <div className="App">
+    <ErrorBoundary>
+      <UserProvider>
         <Dashboard />
-      </div>
-    </UserProvider>
+      </UserProvider>
+    </ErrorBoundary>
   );
 }
 
