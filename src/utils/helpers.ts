@@ -1,14 +1,34 @@
 import {
-  format,
   addDays,
-  subDays,
-  startOfMonth,
-  endOfMonth,
-  parseISO,
-  isValid,
   differenceInDays,
+  endOfMonth,
+  format,
   formatDistanceToNow,
+  isValid,
+  parseISO,
+  startOfMonth,
+  subDays,
 } from "date-fns";
+
+export function getRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+export function groupBy<T, K extends string | number>(
+  arr: T[],
+  keyFn: (item: T) => K
+): Record<K, T[]> {
+  return arr.reduce((acc, item) => {
+    const key = keyFn(item);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<K, T[]>);
+}
+
+export const formatDate = (date: Date) => {
+  return format(date, "MMM dd, yyyy HH:mm");
+};
 
 export const formatTransactionDate = (date: Date): string => {
   return format(date, "PPpp");
@@ -61,4 +81,21 @@ export const formatNumber = (num: number, locale: string = "en-US") => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(num);
+};
+
+export const formatCurrencyByCode = (
+  amount: number,
+  currency: string,
+  locale: string = "en-US"
+) => {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    return formatCurrency(amount, locale);
+  }
 };

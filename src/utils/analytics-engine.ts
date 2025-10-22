@@ -4,7 +4,54 @@ import { Transaction } from "../types/transaction";
 export const generateRiskAssessment = (transactions: Transaction[]) => {
   const startTime = performance.now();
 
-  const fraudScores = transactions.map((transaction) => {
+  const fraudScores = calculateFraudScores(transactions);
+  const timeSeriesData = generateTimeSeriesAnalysis(transactions);
+  const marketCorrelation = calculateMarketCorrelation(transactions);
+  const behaviorClusters = performBehaviorClustering(transactions);
+
+  const endTime = performance.now();
+
+  return {
+    fraudScores,
+    timeSeriesData,
+    marketCorrelation,
+    behaviorClusters,
+    processingTime: endTime - startTime,
+    dataPoints: transactions.length ** 2,
+  };
+};
+
+export const calculateStringSimilarity = (
+  str1: string,
+  str2: string
+): number => {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [];
+    for (let j = 0; j <= len2; j++) {
+      if (i === 0) {
+        matrix[i][j] = j;
+      } else if (j === 0) {
+        matrix[i][j] = i;
+      } else {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+  }
+
+  return 1 - matrix[len1][len2] / Math.max(len1, len2);
+};
+
+export const calculateFraudScores = (transactions: Transaction[]) => {
+  return transactions.map((transaction) => {
     let score = 0;
 
     for (let i = 0; i < transactions.length; i++) {
@@ -33,50 +80,9 @@ export const generateRiskAssessment = (transactions: Transaction[]) => {
 
     return { ...transaction, fraudScore: score };
   });
-
-  const timeSeriesData = generateTimeSeriesAnalysis(transactions);
-  const marketCorrelation = calculateMarketCorrelation(transactions);
-  const behaviorClusters = performBehaviorClustering(transactions);
-
-  const endTime = performance.now();
-
-  return {
-    fraudScores,
-    timeSeriesData,
-    marketCorrelation,
-    behaviorClusters,
-    processingTime: endTime - startTime,
-    dataPoints: transactions.length * transactions.length,
-  };
 };
 
-const calculateStringSimilarity = (str1: string, str2: string): number => {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [];
-    for (let j = 0; j <= len2; j++) {
-      if (i === 0) {
-        matrix[i][j] = j;
-      } else if (j === 0) {
-        matrix[i][j] = i;
-      } else {
-        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j - 1] + cost
-        );
-      }
-    }
-  }
-
-  return 1 - matrix[len1][len2] / Math.max(len1, len2);
-};
-
-const generateTimeSeriesAnalysis = (transactions: Transaction[]) => {
+export const generateTimeSeriesAnalysis = (transactions: Transaction[]) => {
   const dailyData: Record<
     string,
     { total: number; count: number; avg: number }
@@ -102,31 +108,33 @@ const generateTimeSeriesAnalysis = (transactions: Transaction[]) => {
   return { dailyData, movingAverages };
 };
 
-const calculateMarketCorrelation = (transactions: Transaction[]) => {
+export const calculateMarketCorrelation = (transactions: Transaction[]) => {
+  const categoryGroups: Record<string, number[]> = {};
   const categories = Array.from(new Set(transactions.map((t) => t.category)));
   const correlationMatrix: Record<string, Record<string, number>> = {};
 
-  categories.forEach((cat1) => {
-    correlationMatrix[cat1] = {};
-    categories.forEach((cat2) => {
-      const cat1Transactions = transactions.filter((t) => t.category === cat1);
-      const cat2Transactions = transactions.filter((t) => t.category === cat2);
-
-      if (cat1Transactions.length > 1 && cat2Transactions.length > 1) {
-        correlationMatrix[cat1][cat2] = calculatePearsonCorrelation(
-          cat1Transactions.map((t) => t.amount),
-          cat2Transactions.map((t) => t.amount)
-        );
-      } else {
-        correlationMatrix[cat1][cat2] = 0;
-      }
-    });
+  transactions.forEach(({ category, amount }) => {
+    if (!categoryGroups[category!]) categoryGroups[category!] = [];
+    categoryGroups[category!].push(amount!);
   });
+
+  for (const cat1 of categories) {
+    correlationMatrix[cat1] = {};
+    for (const cat2 of categories) {
+      const x = categoryGroups[cat1];
+      const y = categoryGroups[cat2];
+      correlationMatrix[cat1][cat2] =
+        x.length > 1 && y.length > 1 ? calculatePearsonCorrelation(x, y) : 0;
+    }
+  }
 
   return correlationMatrix;
 };
 
-const calculatePearsonCorrelation = (x: number[], y: number[]): number => {
+export const calculatePearsonCorrelation = (
+  x: number[],
+  y: number[]
+): number => {
   const n = Math.min(x.length, y.length);
   if (n < 2) return 0;
 
@@ -144,26 +152,27 @@ const calculatePearsonCorrelation = (x: number[], y: number[]): number => {
   return denominator === 0 ? 0 : numerator / denominator;
 };
 
-const performBehaviorClustering = (transactions: Transaction[]) => {
-  const users = Array.from(new Set(transactions.map((t) => t.userId)));
+function performBehaviorClustering(transactions: Transaction[]) {
+  const userMap = new Map<string, Transaction[]>();
+
+  transactions.forEach((t) => {
+    if (!userMap.has(t.userId!)) userMap.set(t.userId!, []);
+    userMap.get(t.userId!)!.push(t);
+  });
+
   const clusters: Record<string, Transaction[]> = {};
 
-  users.forEach((userId) => {
-    const userTransactions = transactions.filter((t) => t.userId === userId);
+  userMap.forEach((userTxns) => {
+    const pattern = analyzeSpendingPattern(userTxns);
+    const clusterKey = `cluster_${Math.floor(pattern.avgAmount / 100)}`;
 
-    const spendingPattern = analyzeSpendingPattern(userTransactions);
-    const clusterKey = `cluster_${Math.floor(spendingPattern.avgAmount / 100)}`;
-
-    if (!clusters[clusterKey]) {
-      clusters[clusterKey] = [];
-    }
-    clusters[clusterKey].push(...userTransactions);
+    if (!clusters[clusterKey]) clusters[clusterKey] = [];
+    clusters[clusterKey].push(...userTxns);
   });
 
   return clusters;
-};
-
-const analyzeSpendingPattern = (userTransactions: Transaction[]) => {
+}
+export const analyzeSpendingPattern = (userTransactions: Transaction[]) => {
   const totalAmount = userTransactions.reduce((sum, t) => sum + t.amount, 0);
   const avgAmount = totalAmount / userTransactions.length;
 

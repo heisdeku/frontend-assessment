@@ -1,10 +1,11 @@
 import {
-  Transaction,
   FilterOptions,
+  Transaction,
   TransactionSummary,
 } from "../types/transaction";
+import { getRandom } from "./helpers";
 
-const CATEGORIES = [
+export const CATEGORIES = [
   "Food & Dining",
   "Shopping",
   "Transportation",
@@ -22,7 +23,7 @@ const CATEGORIES = [
   "Home & Garden",
 ];
 
-const MERCHANTS = [
+export const MERCHANTS = [
   "Starbucks",
   "Amazon",
   "Walmart",
@@ -45,7 +46,7 @@ const MERCHANTS = [
   "CitiBank",
 ];
 
-const LOCATIONS = [
+export const LOCATIONS = [
   "New York, NY",
   "Los Angeles, CA",
   "Chicago, IL",
@@ -128,62 +129,52 @@ export function searchTransactions(
 ): Transaction[] {
   if (!searchTerm || searchTerm.length < 2) return transactions;
 
-  const results: Transaction[] = [];
-  const lowerSearchTerm = searchTerm.toLowerCase();
-
-  for (const transaction of transactions) {
-    if (
-      transaction.description.toLowerCase().includes(lowerSearchTerm) ||
-      transaction.merchantName.toLowerCase().includes(lowerSearchTerm) ||
-      transaction.category.toLowerCase().includes(lowerSearchTerm) ||
-      transaction.id.toLowerCase().includes(lowerSearchTerm) ||
-      transaction.amount.toString().includes(lowerSearchTerm)
-    ) {
-      results.push(transaction);
-    }
-  }
-
-  return results;
+  const lower = searchTerm.toLowerCase();
+  return transactions.filter(
+    (transaction) =>
+      transaction.merchantName.toLowerCase().includes(lower) ||
+      transaction.description.toLowerCase().includes(lower) ||
+      transaction.category.toLowerCase().includes(lower) ||
+      transaction.id.toString().includes(lower) ||
+      transaction.amount.toString().includes(lower) ||
+      transaction?.location?.toString()?.includes(lower)
+  );
 }
 
 export function filterTransactions(
   transactions: Transaction[],
   filters: FilterOptions
 ): Transaction[] {
-  let filtered = [...transactions];
+  return transactions.filter((t) => {
+    const matchesType =
+      filters.type && filters.type !== "all" ? t.type === filters.type : true;
+    const matchesCategory = filters.category
+      ? t.category === filters.category
+      : true;
+    const matchesStatus =
+      filters.status && filters.status !== "all"
+        ? t.status === filters.status
+        : true;
+    const matchesDateRange = filters.dateRange
+      ? t.timestamp >= filters.dateRange.start &&
+        t.timestamp <= filters.dateRange.end
+      : true;
+    const matchesAmountRange = filters.amountRange
+      ? t.amount >= filters.amountRange.min &&
+        t.amount <= filters.amountRange.max
+      : true;
 
-  if (filters.type && filters.type !== "all") {
-    filtered = filtered.filter((t) => t.type === filters.type);
-  }
-
-  if (filters.category) {
-    filtered = filtered.filter((t) => t.category === filters.category);
-  }
-
-  if (filters.status && filters.status !== "all") {
-    filtered = filtered.filter((t) => t.status === filters.status);
-  }
-
-  if (filters.dateRange) {
-    filtered = filtered.filter(
-      (t) =>
-        t.timestamp >= filters.dateRange!.start &&
-        t.timestamp <= filters.dateRange!.end
+    return (
+      matchesType &&
+      matchesCategory &&
+      matchesStatus &&
+      matchesDateRange &&
+      matchesAmountRange
     );
-  }
-
-  if (filters.amountRange) {
-    filtered = filtered.filter(
-      (t) =>
-        t.amount >= filters.amountRange!.min &&
-        t.amount <= filters.amountRange!.max
-    );
-  }
-
-  return filtered;
+  });
 }
 
-function calculateTransactionRisk(transactionIndex: number): number {
+export function calculateTransactionRisk(transactionIndex: number): number {
   let riskScore = 0;
 
   // Multi-factor risk assessment algorithm
@@ -212,7 +203,7 @@ function calculateTransactionRisk(transactionIndex: number): number {
   return Math.abs(riskScore);
 }
 
-function generateRandomDescription(): string {
+export function generateRandomDescription(): string {
   const actions = [
     "Purchase",
     "Payment",
@@ -229,30 +220,28 @@ function generateRandomDescription(): string {
     "Subscription",
     "ATM withdrawal",
   ];
-
-  return `${actions[Math.floor(Math.random() * actions.length)]} - ${
-    items[Math.floor(Math.random() * items.length)]
-  }`;
+  return `${getRandom(actions)} - ${getRandom(items)}`;
 }
 
-let intervalId: number | null = null;
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-export function startDataRefresh(callback: () => void) {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
-
-  intervalId = setInterval(() => {
-    const newData = generateTransactionData(100);
-    globalTransactionCache.push(...newData);
+export function startDataRefresh(callback: () => void, delay = 10000) {
+  const run = async () => {
+    const transactionData = await generateTransactionData(100);
+    globalTransactionCache.push(...transactionData);
     callback();
-  }, 10000);
+
+    timeoutId = setTimeout(run, delay);
+  };
+
+  stopDataRefresh();
+  timeoutId = setTimeout(run, delay);
 }
 
 export function stopDataRefresh() {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
   }
 }
 
@@ -284,34 +273,17 @@ export function calculateSummary(
     categoryCounts: {} as Record<string, number>,
   };
 
-  transactions.forEach((t) => {
+  for (const t of transactions) {
     summary.totalAmount += t.amount;
-  });
+    if (t.type === "credit") summary.totalCredits += t.amount;
+    if (t.type === "debit") summary.totalDebits += t.amount;
+    summary.categoryCounts[t.category] =
+      (summary.categoryCounts[t.category] || 0) + 1;
+  }
 
-  transactions.forEach((t) => {
-    if (t.type === "credit") {
-      summary.totalCredits += t.amount;
-    }
-  });
-
-  transactions.forEach((t) => {
-    if (t.type === "debit") {
-      summary.totalDebits += t.amount;
-    }
-  });
-
-  transactions.forEach((t) => {
-    if (summary.categoryCounts[t.category]) {
-      summary.categoryCounts[t.category]++;
-    } else {
-      summary.categoryCounts[t.category] = 1;
-    }
-  });
-
-  summary.avgTransactionAmount =
-    summary.totalTransactions > 0
-      ? summary.totalAmount / summary.totalTransactions
-      : 0;
+  summary.avgTransactionAmount = summary.totalTransactions
+    ? summary.totalAmount / summary.totalTransactions
+    : 0;
 
   return summary;
 }
